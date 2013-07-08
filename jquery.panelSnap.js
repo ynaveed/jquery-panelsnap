@@ -11,7 +11,7 @@ if ( typeof Object.create !== 'function' )
 
 /*!
  * jQuery panelSnap
- * Version 0.7.1
+ * Version 0.7.2
  *
  * Requires:
  * - jQuery 1.7.1 or higher (Works with the API changes from 1.9.1 too)
@@ -157,7 +157,7 @@ if ( typeof Object.create !== 'function' )
 
       if(self.isMouseDown)
       {
-        self.$eventContainer.one('mouseup', self.processScroll);
+        self.$eventContainer.one('mouseup' + self.options.namespace, self.processScroll);
         return;
       }
 
