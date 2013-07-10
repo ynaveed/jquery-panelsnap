@@ -2,7 +2,7 @@
 A jQuery plugin that provides snapping functionality to a set of panels within your interface.
 
 # Demo
-Check out the demos folder for a working demo that explains most of the features present in the plugin.
+Check out the homepage at http://guidobouman.github.io/jquery-panelsnap or the demos folder for a working demo that explains most of the features present in the plugin.
 
 # Usage
 ## The Basics
@@ -12,7 +12,9 @@ Javascript:
 ```html
 <html>
   <head>
-    <script src="/path/to/jquery-panelSnap-0.4.2.js"></script>
+    <script src="/path/to/jquery.js"></script>
+    <script src="/path/to/jquery.customEvents.js"></script>
+    <script src="/path/to/jquery.panelSnap.js"></script>
     <script>
       $('body').panelSnap();
     </script>
@@ -77,12 +79,14 @@ The ammount of miliseconds in which the plugin snaps to the desired panel
 ```html
 <html>
   <head>
-    <script src="/path/to/jquery-panelSnap-0.4.2.js"></script>
+    <script src="/path/to/jquery.js"></script>
+    <script src="/path/to/jquery.customEvents.js"></script>
+    <script src="/path/to/jquery.panelSnap.js"></script>
     <script>
       var options = {
         $menu: $('header .menu')
       };
-      
+
       $('.panel_container').panelSnap(options);
     </script>
   </head>
