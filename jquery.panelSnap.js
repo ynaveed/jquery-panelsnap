@@ -11,10 +11,10 @@ if ( typeof Object.create !== 'function' )
 
 /*!
  * jQuery panelSnap
- * Version 0.7.2
+ * Version 0.8.0
  *
  * Requires:
- * - jQuery 1.7.1 or higher (Works with the API changes from 1.9.1 too)
+ * - jQuery 1.7.1 or higher (no jQuery.migrate needed)
  * - jQuery scrollEvents.js (included in the package)
  *
  * https://github.com/guidobouman/jquery-panelsnap
@@ -63,12 +63,19 @@ if ( typeof Object.create !== 'function' )
       self.$container = $(container);
 
       self.$eventContainer = self.$container;
+      self.$snapContainer = self.$container;
       if(self.$container.is('body'))
       {
         self.$eventContainer = self.$document;
+        var ua = navigator.userAgent;
+        if(!~ua.indexOf("WebKit")) {
+          self.$snapContainer = $('html');
+        }
       }
 
       self.options = $.extend(true, {}, $.fn.panelSnap.options, options);
+
+      self.panelCount = self.getPanel().length;
 
       self.bind();
 
@@ -78,7 +85,9 @@ if ( typeof Object.create !== 'function' )
       }
       else
       {
-        self.activatePanel(self.$container.children(':first'));
+        var $target = self.getPanel(':first');
+
+        self.activatePanel($target);
       }
 
       return self;
@@ -94,7 +103,7 @@ if ( typeof Object.create !== 'function' )
       self.bindProxied(self.$eventContainer, 'mousedown', self.mouseDown);
       self.bindProxied(self.$eventContainer, 'mouseup', self.mouseUp);
 
-      self.bindProxied(self.$window, 'resize', self.scrollStop);
+      self.bindProxied(self.$window, 'resize', self.resize);
 
       if(self.options.$menu !== false)
       {
@@ -131,18 +140,6 @@ if ( typeof Object.create !== 'function' )
       self.$container.removeData(storageName);
     },
 
-    captureMenuClick: function(e)
-    {
-      var self = this;
-      var panel = $(e.currentTarget).data('panel');
-      var selector = self.options.panelSelector + '[data-panel=' + panel + ']';
-      var $target = $(selector, self.$container);
-
-      self.snapToPanel($target);
-
-      return false;
-    },
-
     scrollStart: function(e)
     {
       var self = this;
@@ -154,6 +151,8 @@ if ( typeof Object.create !== 'function' )
     scrollStop: function(e)
     {
       var self = this;
+
+      e.stopPropagation();
 
       if(self.isMouseDown)
       {
@@ -168,17 +167,14 @@ if ( typeof Object.create !== 'function' )
 
       var interval = self.$container.height();
       var intervalDifference = interval - self.scrollInterval;
-      var offset = self.$container.scrollTop();
+      var offset = self.$eventContainer.scrollTop();
       var scrollDifference = offset - self.scrollOffset;
       var maxOffset = self.$container[0].scrollHeight - interval;
 
       self.scrollInterval = interval;
 
-      if(
-        scrollDifference === 0  && intervalDifference === 0 ||
-        offset < 0 ||
-        offset > maxOffset
-      )
+      if((scrollDifference === 0) ||
+        (scrollDifference < 100 && (offset < 0 || offset > maxOffset)))
       {
         return;
       }
@@ -197,10 +193,11 @@ if ( typeof Object.create !== 'function' )
         child_number = Math.round(offset / interval);
       }
 
-      child_number += 1;
+      child_number = child_number < 0 ? 0 : child_number;
 
-      var selector = '> ' + self.options.panelSelector + ':nth-child(' + child_number + ')';
-      var $target = $(selector, self.$container);
+      child_number = child_number > self.panelCount ? self.panelCount : child_number;
+
+      var $target = self.getPanel(':eq(' + child_number + ')');
 
       self.snapToPanel($target);
     },
@@ -230,6 +227,28 @@ if ( typeof Object.create !== 'function' )
       self.isMouseDown = false;
     },
 
+    resize: function(e) {
+
+      var self = this;
+
+      var $target = self.getPanel('.active');
+
+      self.snapToPanel($target);
+
+    },
+
+    captureMenuClick: function(e)
+    {
+      var self = this;
+
+      var panel = $(e.currentTarget).data('panel');
+      var $target = self.getPanel('[data-panel=' + panel + ']');
+
+      self.snapToPanel($target);
+
+      return false;
+    },
+
     snapToPanel: function($target)
     {
       var self = this;
@@ -246,10 +265,10 @@ if ( typeof Object.create !== 'function' )
       }
       else
       {
-        scrollTarget = self.$container.scrollTop() + $target.position().top;
+        scrollTarget = self.$eventContainer.scrollTop() + $target.position().top;
       }
 
-      self.$container.animate(
+      self.$snapContainer.stop(true).animate(
       {
         scrollTop: scrollTarget
       }, self.options.slideSpeed, function()
@@ -279,6 +298,18 @@ if ( typeof Object.create !== 'function' )
         var $activeItem = $(itemSelector, self.options.$menu);
         $activeItem.addClass('active');
       }
+    },
+
+    getPanel: function(selector)
+    {
+      var self = this;
+
+      if(typeof selector === 'undefined') {
+        selector = '';
+      }
+
+      var panel_selector = '> ' + self.options.panelSelector + selector;
+      return $(panel_selector, self.$container);
     }
   };
 
