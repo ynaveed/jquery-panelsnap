@@ -1,6 +1,5 @@
 // Utility for creating objects in older browsers
 if ( typeof Object.create !== 'function' ) {
-
   Object.create = function( obj ) {
 
     function F() {}
@@ -8,16 +7,14 @@ if ( typeof Object.create !== 'function' ) {
     return new F();
 
   };
-
 }
 
 /*!
  * jQuery panelSnap
- * Version 0.9.1
+ * Version 0.9.2
  *
  * Requires:
  * - jQuery 1.7.1 or higher (no jQuery.migrate needed)
- * - jQuery scrollEvents.js (included in the package)
  *
  * https://github.com/guidobouman/jquery-panelsnap
  *
@@ -49,6 +46,7 @@ if ( typeof Object.create !== 'function' ) {
   var storageName = 'plugin_' + pluginName;
 
   var pluginObject = {
+
     isMouseDown: false,
     isSnapping: false,
     scrollInterval: 0,
@@ -68,16 +66,12 @@ if ( typeof Object.create !== 'function' ) {
       self.$snapContainer = self.$container;
 
       if(self.$container.is('body')) {
-
         self.$eventContainer = self.$document;
         var ua = navigator.userAgent;
 
         if(!~ua.indexOf("WebKit")) {
-
           self.$snapContainer = $('html');
-
         }
-
       }
 
       self.scrollInterval = self.$container.height();
@@ -87,14 +81,10 @@ if ( typeof Object.create !== 'function' ) {
       self.bind();
 
       if(self.options.$menu !== false && $('.active', self.options.$menu).length > 0) {
-
         $('.active', self.options.$menu).click();
-
       } else {
-
         var $target = self.getPanel(':first');
         self.activatePanel($target);
-
       }
 
       return self;
@@ -110,12 +100,10 @@ if ( typeof Object.create !== 'function' ) {
       self.bindProxied(self.$eventContainer, 'mousedown', self.mouseDown);
       self.bindProxied(self.$eventContainer, 'mouseup', self.mouseUp);
 
-      self.bindProxied(self.$window, 'resize', self.resize);
+      self.bindProxied(self.$window, 'resizestop', self.resize);
 
       if(self.options.$menu !== false) {
-
         self.bindProxied($(self.options.$menu), 'click', self.captureMenuClick, self.options.menuSelector);
-
       }
 
     },
@@ -144,9 +132,7 @@ if ( typeof Object.create !== 'function' ) {
       self.$window.off(self.options.namespace);
 
       if(self.options.$menu !== false) {
-
         $(self.options.menuSelector, self.options.$menu).off(self.options.namespace);
-
       }
 
       self.$container.removeData(storageName);
@@ -160,16 +146,12 @@ if ( typeof Object.create !== 'function' ) {
       e.stopPropagation();
 
       if(self.isMouseDown) {
-
         self.$eventContainer.one('mouseup' + self.options.namespace, self.processScroll);
         return;
-
       }
 
       if(self.isSnapping) {
-
         return;
-
       }
 
       var offset = self.$eventContainer.scrollTop();
@@ -177,36 +159,32 @@ if ( typeof Object.create !== 'function' ) {
       var maxOffset = self.$container[0].scrollHeight - self.scrollInterval;
       var panelCount = self.getPanel().length;
 
-      var child_number;
-      if(scrollDifference < -self.options.directionThreshold &&
-        scrollDifference > -self.scrollInterval) {
-
-        child_number = Math.floor(offset / self.scrollInterval);
-
-      } else if(scrollDifference > self.options.directionThreshold &&
-        scrollDifference < self.scrollInterval) {
-
-        child_number = Math.ceil(offset / self.scrollInterval);
-
+      var childNumber;
+      if(
+        scrollDifference < -self.options.directionThreshold &&
+        scrollDifference > -self.scrollInterval
+      ) {
+        childNumber = Math.floor(offset / self.scrollInterval);
+      } else if(
+        scrollDifference > self.options.directionThreshold &&
+        scrollDifference < self.scrollInterval
+      ) {
+        childNumber = Math.ceil(offset / self.scrollInterval);
       } else {
-
-        child_number = Math.round(offset / self.scrollInterval);
-
+        childNumber = Math.round(offset / self.scrollInterval);
       }
 
-      child_number = Math.max(0, Math.min(child_number, panelCount));
+      childNumber = Math.max(0, Math.min(childNumber, panelCount));
 
-      var $target = self.getPanel(':eq(' + child_number + ')');
+      var $target = self.getPanel(':eq(' + childNumber + ')');
 
-      if((scrollDifference === 0) ||
-        (scrollDifference < 100 && (offset < 0 || offset > maxOffset))) {
-
+      if(
+        (scrollDifference === 0) ||
+        (scrollDifference < 100 && (offset < 0 || offset > maxOffset))
+      ) {
         self.activatePanel($target);
-
       } else {
-
         self.snapToPanel($target);
-
       }
 
     },
@@ -275,13 +253,9 @@ if ( typeof Object.create !== 'function' ) {
 
       var scrollTarget = 0;
       if(self.$container.is('body')) {
-
         scrollTarget = $target.offset().top;
-
       } else {
-
         scrollTarget = self.$eventContainer.scrollTop() + $target.position().top;
-
       }
 
       self.$snapContainer.stop(true).animate({
@@ -309,13 +283,11 @@ if ( typeof Object.create !== 'function' ) {
       $target.addClass('active');
 
       if(self.options.$menu !== false) {
-
         $(self.options.menuSelector + '.active', self.options.$menu).removeClass('active');
 
         var itemSelector = self.options.menuSelector + '[data-panel=' + $target.data('panel') + ']';
         var $activeItem = $(itemSelector, self.options.$menu);
         $activeItem.addClass('active');
-
       }
 
     },
@@ -325,13 +297,11 @@ if ( typeof Object.create !== 'function' ) {
       var self = this;
 
       if(typeof selector === 'undefined') {
-
         selector = '';
-
       }
 
-      var panel_selector = '> ' + self.options.panelSelector + selector;
-      return $(panel_selector, self.$container);
+      var panelSelector = '> ' + self.options.panelSelector + selector;
+      return $(panelSelector, self.$container);
 
     },
 
@@ -340,15 +310,12 @@ if ( typeof Object.create !== 'function' ) {
       var self = this;
 
       if(typeof wrap !== 'boolean') {
-
         wrap = true;
-
       }
 
       var $target;
 
       switch(target) {
-
         case 'prev':
 
           $target = self.getPanel('.active').prev(self.options.panelSelector);
@@ -376,66 +343,52 @@ if ( typeof Object.create !== 'function' ) {
 
           $target = self.getPanel(':last');
           break;
-
       }
 
       if($target.length > 0) {
-
         self.snapToPanel($target);
-
       }
 
     }
+
   };
 
   $.fn[pluginName] = function(options) {
+
     var args = Array.prototype.slice.call(arguments);
 
     return this.each(function() {
 
       var pluginInstance = $.data(this, storageName);
       if(typeof options === 'object' || options === 'init' || ! options) {
-
         if(!pluginInstance) {
-
           if(options === 'init') {
-
             options = args[1] || {};
-
           }
 
           pluginInstance = Object.create(pluginObject).init(options, this);
           $.data(this, storageName, pluginInstance);
-
         } else {
-
           $.error('Plugin is already initialized for this object.');
           return;
-
         }
-
       } else if(!pluginInstance) {
-
         $.error('Plugin is not initialized for this object yet.');
         return;
-
       } else if(pluginInstance[options]) {
-
         var method = options;
         options = args.slice(1);
         pluginInstance[method].apply(pluginInstance, options);
-
       } else {
-
         $.error('Method ' +  options + ' does not exist on jQuery.panelSnap.');
         return;
-
       }
 
     });
+
   };
 
-  $.fn.panelSnap.options = {
+  $.fn[pluginName].options = {
     $menu: false,
     menuSelector: 'a',
     panelSelector: 'section',
@@ -449,11 +402,11 @@ if ( typeof Object.create !== 'function' ) {
 })(jQuery, window, document);
 
 /*!
- * Special flavoured jQuery Mobile Scrollstart & Scrollstop events.
- * Version 0.1.1
+ * Special flavoured jQuery Mobile scrollstart & scrollstop events.
+ * Version 0.1.3
  *
  * Requires:
- * - jQuery 1.7.1 or higher (Works with the API changes from 1.9.1 too)
+ * - jQuery 1.7.1 or higher (no jQuery.migrate needed)
  *
  * Copyright 2013, Guido Bouman
  *
@@ -503,25 +456,24 @@ if ( typeof Object.create !== 'function' ) {
       $this.on("touchmove scroll", function(event) {
 
         if(!$.event.special.scrollstart.enabled) {
-
           return;
-
         }
 
-        if(!scrolling) {
-
+        if(!$.event.special.scrollstart.scrolling) {
+          $.event.special.scrollstart.scrolling = true;
           trigger(event, true);
-
         }
 
         clearTimeout(timer);
         timer = setTimeout(function() {
-
+          $.event.special.scrollstart.scrolling = false;
           trigger(event, false);
-
         }, 50);
+
       });
+
     }
+
   };
 
   // Proxies scrollstart when needed
@@ -533,12 +485,104 @@ if ( typeof Object.create !== 'function' ) {
       var $this = $(thisObject);
 
       if(!$this.data('scrollwatch')) {
-
         $(this).on('scrollstart', function(){});
-
       }
 
     }
+
+  };
+
+})(jQuery);
+
+/*!
+ * Resizestart and resizestop events.
+ * Version 0.0.1
+ *
+ * Requires:
+ * - jQuery 1.7.1 or higher (no jQuery.migrate needed)
+ *
+ * Copyright 2013, Guido Bouman
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ *
+ * Date: Fri Oct 25 15:05:00 2013 +0100
+ */
+(function($) {
+
+  // Also handles the resizestop event
+  $.event.special.resizestart = {
+
+    enabled: true,
+
+    setup: function() {
+
+      var thisObject = this;
+      var $this = $(thisObject);
+      var resizing;
+      var timer;
+
+      $this.data('resizewatch', true);
+
+      function trigger(event, resizing) {
+
+        event.type = resizing ? "resizestart" : "resizestop";
+        $this.trigger(event);
+
+      }
+
+      $this.on("resize", function(event) {
+
+        if(!$.event.special.resizestart.enabled) {
+          return;
+        }
+
+        if(!$.event.special.resizestart.resizing) {
+          $.event.special.resizestart.resizing = true;
+          trigger(event, true);
+        }
+
+        clearTimeout(timer);
+        timer = setTimeout(function() {
+          $.event.special.resizestart.resizing = false;
+          trigger(event, false);
+        }, 200);
+
+      });
+
+    }
+
+  };
+
+  // Proxies resizestart when needed
+  $.event.special.resizestop = {
+
+    setup: function() {
+
+      var thisObject = this;
+      var $this = $(thisObject);
+
+      if(!$this.data('resizewatch')) {
+        $(this).on('resizestart', function(){});
+      }
+
+    }
+
   };
 
 })(jQuery);
