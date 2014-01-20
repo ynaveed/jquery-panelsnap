@@ -150,12 +150,17 @@
       <h1>
         The basic setup
       </h1>
-      <pre>&lt;html&gt;
+      <pre>&lt;!doctype html&gt;
+&lt;html&gt;
   &lt;head&gt;
     &lt;script src="/path/to/jquery.js"&gt;&lt;/script&gt;
     &lt;script src="/path/to/jquery.panelSnap.js"&gt;&lt;/script&gt;
     &lt;script&gt;
-      $('body').panelSnap();
+      jQuery(function($) {
+
+        $('body').panelSnap();
+
+      });
     &lt;/script&gt;
   &lt;/head&gt;
   &lt;body&gt;
@@ -177,18 +182,23 @@
         Configuration options
       </h1>
       <pre>&lt;script&gt;
-  var options = {
-    $menu: false,
-    menuSelector: 'a',
-    panelSelector: 'section',
-    namespace: '.panelSnap',
-    onSnapStart: function(){},
-    onSnapFinish: function(){},
-    directionThreshold: 50,
-    slideSpeed: 200
-  };
+  jQuery(function($) {
 
-  $('.panel_container').panelSnap(options);
+    var options = {
+      $menu: false,
+      menuSelector: 'a',
+      panelSelector: 'section',
+      namespace: '.panelSnap',
+      onSnapStart: function(){},
+      onSnapFinish: function(){},
+      onActivate: function(){},
+      directionThreshold: 50,
+      slideSpeed: 200
+    };
+
+    $('.panel_container').panelSnap(options);
+
+  });
 &lt;/script&gt;</pre>
     </section>
 
@@ -260,41 +270,62 @@
       </div>
     </section>
 
-    <script src="//code.jquery.com/jquery-1.10.1.min.js"></script>
+    <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
     <script src="./jquery.panelSnap.js"></script>
     <script>
-      // Basic demo
-      $('body').panelSnap();
 
-      // Menu demo
-      $('.menu_demo .panels').panelSnap({
-        $menu: $('.menu_demo .menu')
-      });
+      jQuery(function($) {
 
-      // Callback demo
-      $('.callback_demo .panels').panelSnap({
-        onSnapStart: function($target){
-        var text = '<p>onSnapStart:<br>' + $target.find('h1').text() + '</p>';
-        $('.callback_demo .log h2').after(text);
-        },
-        onSnapFinish: function($target){
-        var text = '<p>onSnapFinish:<br>' + $target.find('h1').text() + '</p>';
-        $('.callback_demo .log h2').after(text);
+        // Basic demo
+        $('body').panelSnap();
+
+        // Menu demo
+        $('.menu_demo .panels').panelSnap({
+          $menu: $('.menu_demo .menu')
+        });
+
+        // Shared log function
+        function log(type, action, $target) {
+
+          var text = '<p>' + action + ':<br>' + $target.find('h1').text() + '</p>';
+          $('.' + type + '_demo .log h2').after(text);
+
         }
+
+        // Callback demo
+        $('.callback_demo .panels').panelSnap({
+          onSnapStart: function($target) {
+
+            log('callback', 'onSnapStart', $target);
+
+          },
+          onSnapFinish: function($target) {
+
+            log('callback', 'onSnapFinish', $target);
+
+          },
+          onActivate: function($target) {
+
+            log('callback', 'onActivate', $target);
+
+          }
+        });
+
+        // Event demo
+        $('.event_demo .panels').panelSnap();
+
+        $('.event_demo .panels').on('panelsnap:start', event_log);
+        $('.event_demo .panels').on('panelsnap:finish', event_log);
+        $('.event_demo .panels').on('panelsnap:activate', event_log);
+
+        function event_log(e, $target) {
+
+          log('event', e.type, $target);
+
+        }
+
       });
 
-      // Event demo
-      $('.event_demo .panels').panelSnap();
-
-      $('.event_demo .panels').on('panelsnap:start', function(e, $target){
-        var text = '<p>panelsnap:start:<br>' + $target.find('h1').text() + '</p>';
-        $('.event_demo .log h2').after(text);
-      });
-
-      $('.event_demo .panels').on('panelsnap:finish', function(e, $target){
-        var text = '<p>panelsnap:finish:<br>' + $target.find('h1').text() + '</p>';
-        $('.event_demo .log h2').after(text);
-      });
     </script>
 
   </body>
