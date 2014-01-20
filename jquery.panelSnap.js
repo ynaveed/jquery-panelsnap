@@ -11,7 +11,7 @@ if ( typeof Object.create !== 'function' ) {
 
 /*!
  * jQuery panelSnap
- * Version 0.9.2
+ * Version 0.10.3
  *
  * Requires:
  * - jQuery 1.7.1 or higher (no jQuery.migrate needed)
@@ -49,6 +49,7 @@ if ( typeof Object.create !== 'function' ) {
 
     isMouseDown: false,
     isSnapping: false,
+    enabled: true,
     scrollInterval: 0,
     scrollOffset: 0,
 
@@ -145,6 +146,10 @@ if ( typeof Object.create !== 'function' ) {
 
       e.stopPropagation();
 
+      if(!self.enabled) {
+        return;
+      }
+
       if(self.isMouseDown) {
         self.$eventContainer.one('mouseup' + self.options.namespace, self.processScroll);
         return;
@@ -178,11 +183,13 @@ if ( typeof Object.create !== 'function' ) {
 
       var $target = self.getPanel(':eq(' + childNumber + ')');
 
-      if(
-        (scrollDifference === 0) ||
-        (scrollDifference < 100 && (offset < 0 || offset > maxOffset))
-      ) {
+      if(scrollDifference === 0) {
+        // Do nothing
+      } else if (offset < 0 || offset > maxOffset) {
+        // Only activate, prevent stuttering
         self.activatePanel($target);
+        // Set scrollOffset to a sane number for next scroll
+        self.scrollOffset = offset < 0 ? 0 : maxOffset;
       } else {
         self.snapToPanel($target);
       }
@@ -222,6 +229,10 @@ if ( typeof Object.create !== 'function' ) {
       var self = this;
 
       self.scrollInterval = self.$container.height();
+
+      if(!self.enabled) {
+        return;
+      }
 
       var $target = self.getPanel('.active');
 
@@ -279,16 +290,21 @@ if ( typeof Object.create !== 'function' ) {
 
       var self = this;
 
-      $('> ' + self.options.panelSelector + '.active', self.container).removeClass('active');
+      self.getPanel('.active').removeClass('active');
       $target.addClass('active');
 
       if(self.options.$menu !== false) {
-        $(self.options.menuSelector + '.active', self.options.$menu).removeClass('active');
+        var activeItemSelector = '> ' + self.options.menuSelector + '.active';
+        $(activeItemSelector, self.options.$menu).removeClass('active');
 
-        var itemSelector = self.options.menuSelector + '[data-panel=' + $target.data('panel') + ']';
-        var $activeItem = $(itemSelector, self.options.$menu);
-        $activeItem.addClass('active');
+        var attribute = '[data-panel=' + $target.data('panel') + ']';
+        var itemSelector = '> ' + self.options.menuSelector + attribute;
+        var $itemToActivate = $(itemSelector, self.options.$menu);
+        $itemToActivate.addClass('active');
       }
+
+      self.options.onActivate.call(self, $target);
+      self.$container.trigger('panelsnap:activate', [$target]);
 
     },
 
@@ -349,6 +365,37 @@ if ( typeof Object.create !== 'function' ) {
         self.snapToPanel($target);
       }
 
+    },
+
+    enable: function() {
+
+      var self = this;
+
+      // Gather scrollOffset for next scroll
+      self.scrollOffset = self.$container[0].scrollHeight;
+
+      self.enabled = true;
+
+    },
+
+    disable: function() {
+
+      var self = this;
+
+      self.enabled = false;
+
+    },
+
+    toggle: function() {
+
+      var self = this;
+
+      if(self.enabled) {
+        self.disable();
+      } else {
+        self.enable();
+      }
+
     }
 
   };
@@ -395,6 +442,7 @@ if ( typeof Object.create !== 'function' ) {
     namespace: '.panelSnap',
     onSnapStart: function(){},
     onSnapFinish: function(){},
+    onActivate: function(){},
     directionThreshold: 50,
     slideSpeed: 200
   };
