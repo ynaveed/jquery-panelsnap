@@ -20,6 +20,7 @@
       }
 
       body {
+        overflow-x: hidden;
         color: #ffffff;
         font-family: 'Lato';
         font-weight: 100;
@@ -255,7 +256,13 @@
       onSnapFinish: function(){},
       onActivate: function(){},
       directionThreshold: 50,
-      slideSpeed: 200
+      slideSpeed: 200,
+      keyboardNavigation: {
+        enabled: false,
+        nextPanelKey: 40,
+        previousPanelKey: 38,
+        wrapAround: true
+      }
     };
 
     $('.panel_container').panelSnap(options);
@@ -288,6 +295,26 @@
         <section data-panel="third">
           <h1>Third</h1>
         </section>
+      </div>
+    </section>
+
+    <section class="keyboard_demo">
+      <h1>
+        Keyboard
+      </h1>
+      <div class="panels">
+        <section>
+          <h1>First</h1>
+        </section>
+        <section>
+          <h1>Second</h1>
+        </section>
+        <section>
+          <h1>Third</h1>
+        </section>
+      </div>
+      <div class="log">
+        <h2>Try using the left & right keys to navigate trough these panels.</h2>
       </div>
     </section>
 
@@ -331,7 +358,7 @@
       </div>
     </section>
 
-    <script src="http://code.jquery.com/jquery-2.0.2.min.js"></script>
+    <script src="http://code.jquery.com/jquery-2.1.0.min.js"></script>
     <script src="./jquery.panelSnap.js"></script>
     <script>
 
@@ -345,13 +372,15 @@
           $menu: $('.menu_demo .menu')
         });
 
-        // Shared log function
-        function log(type, action, $target) {
-
-          var text = '<p>' + action + ':<br>' + $target.find('h1').text() + '</p>';
-          $('.' + type + '_demo .log h2').after(text);
-
-        }
+        // Keyboard demo
+        $('.keyboard_demo .panels').panelSnap({
+          keyboardNavigation: {
+            enabled: true,
+            nextPanelKey: 39,
+            previousPanelKey: 37,
+            wrapAround: false
+          }
+        });
 
         // Callback demo
         $('.callback_demo .panels').panelSnap({
@@ -373,15 +402,23 @@
         });
 
         // Event demo
-        $('.event_demo .panels').panelSnap();
-
         $('.event_demo .panels').on('panelsnap:start', event_log);
         $('.event_demo .panels').on('panelsnap:finish', event_log);
         $('.event_demo .panels').on('panelsnap:activate', event_log);
 
+        $('.event_demo .panels').panelSnap();
+
         function event_log(e, $target) {
 
           log('event', e.type, $target);
+
+        }
+
+        // Shared log function
+        function log(type, action, $target) {
+
+          var text = '<p>' + action + ':<br>' + $target.find('h1').text() + '</p>';
+          $('.' + type + '_demo .log h2').after(text);
 
         }
 

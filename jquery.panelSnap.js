@@ -11,10 +11,10 @@ if ( typeof Object.create !== 'function' ) {
 
 /*!
  * jQuery panelSnap
- * Version 0.10.3
+ * Version 0.12.0
  *
  * Requires:
- * - jQuery 1.7.1 or higher (no jQuery.migrate needed)
+ * - jQuery 1.7 or higher (no jQuery.migrate needed)
  *
  * https://github.com/guidobouman/jquery-panelsnap
  *
@@ -57,9 +57,6 @@ if ( typeof Object.create !== 'function' ) {
 
       var self = this;
 
-      self.$window = $(window);
-      self.$document = $(document);
-
       self.container = container;
       self.$container = $(container);
 
@@ -67,11 +64,12 @@ if ( typeof Object.create !== 'function' ) {
       self.$snapContainer = self.$container;
 
       if(self.$container.is('body')) {
-        self.$eventContainer = self.$document;
-        var ua = navigator.userAgent;
+        self.$eventContainer = $(document);
+        self.$snapContainer = $(document.documentElement);
 
-        if(!~ua.indexOf("WebKit")) {
-          self.$snapContainer = $('html');
+        var ua = navigator.userAgent;
+        if(~ua.indexOf('WebKit')) {
+          self.$snapContainer = $('body');
         }
       }
 
@@ -101,7 +99,11 @@ if ( typeof Object.create !== 'function' ) {
       self.bindProxied(self.$eventContainer, 'mousedown', self.mouseDown);
       self.bindProxied(self.$eventContainer, 'mouseup', self.mouseUp);
 
-      self.bindProxied(self.$window, 'resizestop', self.resize);
+      self.bindProxied($(window), 'resizestop', self.resize);
+
+      if(self.options.keyboardNavigation.enabled) {
+        self.bindProxied($(window), 'keydown', self.keyDown, self.$eventContainer);
+      }
 
       if(self.options.$menu !== false) {
         self.bindProxied($(self.options.$menu), 'click', self.captureMenuClick, self.options.menuSelector);
@@ -130,7 +132,7 @@ if ( typeof Object.create !== 'function' ) {
       // Gotta love namespaced events!
       self.$eventContainer.off(self.options.namespace);
 
-      self.$window.off(self.options.namespace);
+      $(window).off(self.options.namespace);
 
       if(self.options.$menu !== false) {
         $(self.options.menuSelector, self.options.$menu).off(self.options.namespace);
@@ -159,7 +161,7 @@ if ( typeof Object.create !== 'function' ) {
         return;
       }
 
-      var offset = self.$eventContainer.scrollTop();
+      var offset = self.$snapContainer.scrollTop();
       var scrollDifference = offset - self.scrollOffset;
       var maxOffset = self.$container[0].scrollHeight - self.scrollInterval;
       var panelCount = self.getPanel().length;
@@ -185,7 +187,7 @@ if ( typeof Object.create !== 'function' ) {
 
       if(scrollDifference === 0) {
         // Do nothing
-      } else if (offset < 0 || offset > maxOffset) {
+      } else if (offset <= 0 || offset >= maxOffset) {
         // Only activate, prevent stuttering
         self.activatePanel($target);
         // Set scrollOffset to a sane number for next scroll
@@ -222,6 +224,38 @@ if ( typeof Object.create !== 'function' ) {
 
       self.isMouseDown = false;
 
+      if(self.scrollOffset !== self.$snapContainer.scrollTop()) {
+        self.scrollStop(e);
+      }
+
+    },
+
+    keyDown: function(e) {
+
+      var self = this;
+
+      var nav = self.options.keyboardNavigation
+
+      if (self.isSnapping) {
+        if(e.which == nav.previousPanelKey || e.which == nav.nextPanelKey) {
+          e.preventDefault();
+          return false;
+        }
+
+        return;
+      }
+
+      switch(e.which) {
+        case nav.previousPanelKey:
+          e.preventDefault();
+          self.snapTo('prev', nav.wrapAround);
+          break;
+        case nav.nextPanelKey:
+          e.preventDefault();
+          self.snapTo('next', nav.wrapAround);
+          break;
+      }
+
     },
 
     resize: function(e) {
@@ -245,7 +279,7 @@ if ( typeof Object.create !== 'function' ) {
       var self = this;
 
       var panel = $(e.currentTarget).data('panel');
-      var $target = self.getPanel('[data-panel=' + panel + ']');
+      var $target = self.getPanel('[data-panel="' + panel + '"]');
 
       self.snapToPanel($target);
 
@@ -257,6 +291,10 @@ if ( typeof Object.create !== 'function' ) {
 
       var self = this;
 
+      if (!($target instanceof jQuery)) {
+        return;
+      }
+
       self.isSnapping = true;
 
       self.options.onSnapStart.call(self, $target);
@@ -266,7 +304,7 @@ if ( typeof Object.create !== 'function' ) {
       if(self.$container.is('body')) {
         scrollTarget = $target.offset().top;
       } else {
-        scrollTarget = self.$eventContainer.scrollTop() + $target.position().top;
+        scrollTarget = self.$snapContainer.scrollTop() + $target.position().top;
       }
 
       self.$snapContainer.stop(true).animate({
@@ -297,7 +335,7 @@ if ( typeof Object.create !== 'function' ) {
         var activeItemSelector = '> ' + self.options.menuSelector + '.active';
         $(activeItemSelector, self.options.$menu).removeClass('active');
 
-        var attribute = '[data-panel=' + $target.data('panel') + ']';
+        var attribute = '[data-panel="' + $target.data('panel') + '"]';
         var itemSelector = '> ' + self.options.menuSelector + attribute;
         var $itemToActivate = $(itemSelector, self.options.$menu);
         $itemToActivate.addClass('active');
@@ -444,7 +482,13 @@ if ( typeof Object.create !== 'function' ) {
     onSnapFinish: function(){},
     onActivate: function(){},
     directionThreshold: 50,
-    slideSpeed: 200
+    slideSpeed: 200,
+    keyboardNavigation: {
+      enabled: false,
+      nextPanelKey: 40,
+      previousPanelKey: 38,
+      wrapAround: true
+    }
   };
 
 })(jQuery, window, document);
