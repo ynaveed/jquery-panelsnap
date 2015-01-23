@@ -11,7 +11,7 @@ if ( typeof Object.create !== 'function' ) {
 
 /*!
  * jQuery panelSnap
- * Version 0.14.0
+ * Version 0.14.1
  *
  * Requires:
  * - jQuery 1.7 or higher (no jQuery.migrate needed)
@@ -236,6 +236,7 @@ if ( typeof Object.create !== 'function' ) {
       // This event only fires when the user actually scrolls with their input device.
       // Be it a trackpad, legacy mouse or anything else.
 
+      self.scrollOffset = self.$snapContainer.scrollTop();
       self.$container.stop(true);
       self.isSnapping = false;
 
