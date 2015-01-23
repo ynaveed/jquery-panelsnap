@@ -11,7 +11,7 @@ if ( typeof Object.create !== 'function' ) {
 
 /*!
  * jQuery panelSnap
- * Version 0.12.0
+ * Version 0.14.0
  *
  * Requires:
  * - jQuery 1.7 or higher (no jQuery.migrate needed)
@@ -73,7 +73,7 @@ if ( typeof Object.create !== 'function' ) {
         }
       }
 
-      self.scrollInterval = self.$container.height();
+      self.updateScrollInterval();
 
       self.options = $.extend(true, {}, $.fn.panelSnap.options, options);
 
@@ -148,12 +148,7 @@ if ( typeof Object.create !== 'function' ) {
 
       e.stopPropagation();
 
-      if(!self.enabled) {
-        return;
-      }
-
       if(self.isMouseDown) {
-        self.$eventContainer.one('mouseup' + self.options.namespace, self.processScroll);
         return;
       }
 
@@ -161,18 +156,22 @@ if ( typeof Object.create !== 'function' ) {
         return;
       }
 
+      self.updateScrollInterval();
+
       var offset = self.$snapContainer.scrollTop();
       var scrollDifference = offset - self.scrollOffset;
       var maxOffset = self.$container[0].scrollHeight - self.scrollInterval;
-      var panelCount = self.getPanel().length;
+      var panelCount = self.getPanel().length - 1;
 
       var childNumber;
       if(
+        self.enabled &&
         scrollDifference < -self.options.directionThreshold &&
         scrollDifference > -self.scrollInterval
       ) {
         childNumber = Math.floor(offset / self.scrollInterval);
       } else if(
+        self.enabled &&
         scrollDifference > self.options.directionThreshold &&
         scrollDifference < self.scrollInterval
       ) {
@@ -185,17 +184,49 @@ if ( typeof Object.create !== 'function' ) {
 
       var $target = self.getPanel(':eq(' + childNumber + ')');
 
+      if(!self.enabled) {
+        if(!$target.is(self.getPanel('.active'))) {
+          self.activatePanel($target);
+        }
+
+        return;
+      }
+
+      // To get normal scrolling in panels taller than the viewport,
+      // stop if there's no multiple panels in viewport
+      if (self.getPanelsInViewport().length < 2)
+        return;
+
       if(scrollDifference === 0) {
         // Do nothing
       } else if (offset <= 0 || offset >= maxOffset) {
         // Only activate, prevent stuttering
         self.activatePanel($target);
         // Set scrollOffset to a sane number for next scroll
-        self.scrollOffset = offset < 0 ? 0 : maxOffset;
+        self.scrollOffset = offset <= 0 ? 0 : maxOffset;
       } else {
         self.snapToPanel($target);
       }
 
+    },
+
+    getPanelsInViewport: function() {
+
+      var self = this;
+      var $window = $(window);
+
+      var viewport = { top: $window.scrollTop() };
+      viewport.bottom = viewport.top + $window.height();
+
+      var panels = self.getPanel().filter(function (_, el) {
+        var $el = $(el);
+        var bounds = $el.offset();
+        bounds.bottom = bounds.top + $el.outerHeight();
+
+        return !(viewport.bottom < bounds.top || viewport.top > bounds.bottom);
+      });
+
+      return panels;
     },
 
     mouseWheel: function(e) {
@@ -234,7 +265,11 @@ if ( typeof Object.create !== 'function' ) {
 
       var self = this;
 
-      var nav = self.options.keyboardNavigation
+      var nav = self.options.keyboardNavigation;
+
+      if(!self.enabled) {
+        return;
+      }
 
       if (self.isSnapping) {
         if(e.which == nav.previousPanelKey || e.which == nav.nextPanelKey) {
@@ -262,7 +297,7 @@ if ( typeof Object.create !== 'function' ) {
 
       var self = this;
 
-      self.scrollInterval = self.$container.height();
+      self.updateScrollInterval();
 
       if(!self.enabled) {
         return;
@@ -291,7 +326,7 @@ if ( typeof Object.create !== 'function' ) {
 
       var self = this;
 
-      if (!($target instanceof jQuery)) {
+      if (!$target.jquery) {
         return;
       }
 
@@ -302,25 +337,26 @@ if ( typeof Object.create !== 'function' ) {
 
       var scrollTarget = 0;
       if(self.$container.is('body')) {
-        scrollTarget = $target.offset().top;
+        scrollTarget = $target.offset().top - self.options.offset;
       } else {
-        scrollTarget = self.$snapContainer.scrollTop() + $target.position().top;
+        scrollTarget = self.$snapContainer.scrollTop() + $target.position().top - self.options.offset;
       }
 
       self.$snapContainer.stop(true).animate({
         scrollTop: scrollTarget
-      }, self.options.slideSpeed, function() {
+      }, self.options.slideSpeed, self.options.easing, function() {
 
-        self.scrollOffset = scrollTarget;
+        // Set scrollOffset to scrollTop
+        // (not to scrollTarget since on iPad those sometimes differ)
+        self.scrollOffset = self.$snapContainer.scrollTop();
         self.isSnapping = false;
 
         // Call callback
         self.options.onSnapFinish.call(self, $target);
         self.$container.trigger('panelsnap:finish', [$target]);
 
+        self.activatePanel($target);
       });
-
-      self.activatePanel($target);
 
     },
 
@@ -332,11 +368,11 @@ if ( typeof Object.create !== 'function' ) {
       $target.addClass('active');
 
       if(self.options.$menu !== false) {
-        var activeItemSelector = '> ' + self.options.menuSelector + '.active';
+        var activeItemSelector = self.options.menuSelector + '.active';
         $(activeItemSelector, self.options.$menu).removeClass('active');
 
         var attribute = '[data-panel="' + $target.data('panel') + '"]';
-        var itemSelector = '> ' + self.options.menuSelector + attribute;
+        var itemSelector = self.options.menuSelector + attribute;
         var $itemToActivate = $(itemSelector, self.options.$menu);
         $itemToActivate.addClass('active');
       }
@@ -354,8 +390,7 @@ if ( typeof Object.create !== 'function' ) {
         selector = '';
       }
 
-      var panelSelector = '> ' + self.options.panelSelector + selector;
-      return $(panelSelector, self.$container);
+      return $(self.options.panelSelector + selector, self.$container);
 
     },
 
@@ -372,7 +407,7 @@ if ( typeof Object.create !== 'function' ) {
       switch(target) {
         case 'prev':
 
-          $target = self.getPanel('.active').prev(self.options.panelSelector);
+          $target = self.getPanel('.active').prevAll(self.options.panelSelector).last();
           if($target.length < 1 && wrap)
           {
             $target = self.getPanel(':last');
@@ -381,7 +416,7 @@ if ( typeof Object.create !== 'function' ) {
 
         case 'next':
 
-          $target = self.getPanel('.active').next(self.options.panelSelector);
+          $target = self.getPanel('.active').nextAll(self.options.panelSelector).first();
           if($target.length < 1 && wrap)
           {
             $target = self.getPanel(':first');
@@ -405,12 +440,23 @@ if ( typeof Object.create !== 'function' ) {
 
     },
 
+    getScrollInterval: function () {
+
+      return this.$container.is('body') ? window.innerHeight : this.$container.height();
+    },
+
+    updateScrollInterval: function () {
+
+      this.scrollInterval = this.getScrollInterval();
+
+    },
+
     enable: function() {
 
       var self = this;
 
       // Gather scrollOffset for next scroll
-      self.scrollOffset = self.$container[0].scrollHeight;
+      self.scrollOffset = self.$snapContainer.scrollTop();
 
       self.enabled = true;
 
@@ -476,13 +522,15 @@ if ( typeof Object.create !== 'function' ) {
   $.fn[pluginName].options = {
     $menu: false,
     menuSelector: 'a',
-    panelSelector: 'section',
+    panelSelector: '> section',
     namespace: '.panelSnap',
     onSnapStart: function(){},
     onSnapFinish: function(){},
     onActivate: function(){},
     directionThreshold: 50,
     slideSpeed: 200,
+    easing: 'linear',
+    offset: 0,
     keyboardNavigation: {
       enabled: false,
       nextPanelKey: 40,
@@ -535,6 +583,7 @@ if ( typeof Object.create !== 'function' ) {
       var $this = $(thisObject);
       var scrolling;
       var timer;
+      var isTouching;
 
       $this.data('scrollwatch', true);
 
@@ -545,7 +594,22 @@ if ( typeof Object.create !== 'function' ) {
 
       }
 
+      $this.on("touchstart", function(event) {
+        isTouching = true;
+      });
+
+      $this.on("touchleave touchcancel touchend", function(event) {
+        isTouching = false;
+        setTimeout(function () {
+          clearTimeout(timer);
+        }, 50);
+      });
+
       $this.on("touchmove scroll", function(event) {
+
+        if (isTouching) {
+          return;
+        }
 
         if(!$.event.special.scrollstart.enabled) {
           return;
