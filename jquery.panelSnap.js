@@ -44,6 +44,7 @@ if ( typeof Object.create !== 'function' ) {
 
   var pluginName = 'panelSnap';
   var storageName = 'plugin_' + pluginName;
+  var direction = ''; //keep direction global
 
   var pluginObject = {
 
@@ -155,13 +156,17 @@ if ( typeof Object.create !== 'function' ) {
       if(self.isSnapping) {
         return;
       }
-
+      
       self.updateScrollInterval();
+
+
 
       var offset = self.$snapContainer.scrollTop();
       var scrollDifference = offset - self.scrollOffset;
       var maxOffset = self.$container[0].scrollHeight - self.scrollInterval;
       var panelCount = self.getPanel().length - 1;
+
+      
 
       var childNumber;
       if(
@@ -169,42 +174,54 @@ if ( typeof Object.create !== 'function' ) {
         scrollDifference < -self.options.directionThreshold &&
         scrollDifference > -self.scrollInterval
       ) {
+        direction = 'up';
         childNumber = Math.floor(offset / self.scrollInterval);
       } else if(
         self.enabled &&
         scrollDifference > self.options.directionThreshold &&
         scrollDifference < self.scrollInterval
       ) {
+        direction = 'down';
         childNumber = Math.ceil(offset / self.scrollInterval);
       } else {
         childNumber = Math.round(offset / self.scrollInterval);
       }
-
       childNumber = Math.max(0, Math.min(childNumber, panelCount));
 
-      var $target = self.getPanel(':eq(' + childNumber + ')');
+      //var $target = self.getPanel(':eq(' + childNumber + ')');
 
-      if(!self.enabled) {
+      /*if(!self.enabled) {
         if(!$target.is(self.getPanel('.active'))) {
           self.activatePanel($target);
         }
 
         return;
-      }
+      }*/
 
       // To get normal scrolling in panels taller than the viewport,
       // stop if there's no multiple panels in viewport
       if (self.getPanelsInViewport().length < 2)
         return;
 
-      if (offset <= 0 || offset >= maxOffset) {
+      var getPanels = self.getPanelsInViewport();
+
+      if(direction == 'up'){
+        self.activatePanel($(getPanels[0]));
+        self.snapToPanel($(getPanels[0]));
+      }else if(direction == 'down'){
+        self.activatePanel($(getPanels[1]));
+        self.snapToPanel($(getPanels[1]));
+      }
+      
+
+      /*if (offset <= 0 || offset >= maxOffset) {
         // Only activate, prevent stuttering
         self.activatePanel($target);
         // Set scrollOffset to a sane number for next scroll
         self.scrollOffset = offset <= 0 ? 0 : maxOffset;
       } else {
         self.snapToPanel($target);
-      }
+      }*/
 
     },
 
@@ -324,7 +341,6 @@ if ( typeof Object.create !== 'function' ) {
     },
 
     snapToPanel: function($target) {
-
       var self = this;
 
       if (!$target.jquery) {
@@ -338,6 +354,7 @@ if ( typeof Object.create !== 'function' ) {
 
       var scrollTarget = 0;
       if(self.$container.is('body')) {
+        if($target.length >0)
         scrollTarget = $target.offset().top - self.options.offset;
       } else {
         scrollTarget = self.$snapContainer.scrollTop() + $target.position().top - self.options.offset;
@@ -350,7 +367,7 @@ if ( typeof Object.create !== 'function' ) {
         // Set scrollOffset to scrollTop
         // (not to scrollTarget since on iPad those sometimes differ)
         self.scrollOffset = self.$snapContainer.scrollTop();
-        self.isSnapping = false;
+        self.isSnapping = true; // keep it true
 
         // Call callback
         self.options.onSnapFinish.call(self, $target);
@@ -444,7 +461,6 @@ if ( typeof Object.create !== 'function' ) {
     },
 
     getScrollInterval: function () {
-
       return this.$container.is('body') ? window.innerHeight : this.$container.height();
     },
 
